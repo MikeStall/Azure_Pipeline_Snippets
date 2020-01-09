@@ -1,0 +1,29 @@
+
+# Have variables for KuduUserName, KuduPassword, azureWebSiteName
+
+# task for publish CLI command
+# This produces a zip that can be deployed via Kudu's /ZipDeploy endpoint. 
+# The zip is at $(build.artifactstagingdirectory)\webapp5\webapp5.zip 
+- task: DotNetCoreCLI@2
+  inputs:
+        command: publish
+        projects: 'MyAspNetProj/MyAspNetProj.csproj' # path to the project 
+        publishWebProjects: false
+        arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\webapp5'
+        modifyOutputPath : false
+        zipAfterPublish : true
+
+
+# Diagnostics. 
+- script: |
+   dir /s $(build.artifactstagingdirectory)\webapp5 
+
+# this code takes all the files in $(Build.ArtifactStagingDirectory) and uploads them as an artifact of your build.
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: $(build.artifactStagingDirectory)\webapp5\webapp5.zip 
+    artifactName: 'myWebsiteName'    
+
+- script: |
+    curl -X POST -u $(KuduUserName):$(KuduPassword) https://$(azureWebSiteName).scm.azurewebsites.net/api/zipdeploy -T $(build.artifactStagingDirectory)\webapp5\webapp5.zip
+
